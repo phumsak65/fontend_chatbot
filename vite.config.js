@@ -7,39 +7,88 @@ export default defineConfig({
   // 🚨 เพิ่ม/แก้ไขส่วนนี้
   server: {
     proxy: {
-      // Proxy login routes -> local demo backend
-      '/api/login': {
-        target: 'https://integer-maps-extract-towards.trycloudflare.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/login/, ''),
-      },
-
-      // Proxy chat routes -> local demo backend
+      // 1. Chat Log & History
       '/api/chat': {
-        target: 'https://integer-maps-extract-towards.trycloudflare.com',
+        target: 'http://45.91.133.108:3000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/chat/, ''),
+        rewrite: (path) => path.replace(/^\/api\/chat/, '/ai-gemini'),
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes, req) => {
+            proxyRes.headers['access-control-allow-origin'] = req.headers.origin || '*';
+            proxyRes.headers['access-control-allow-credentials'] = 'true';
+          });
+        },
+      },
+      // 2. Authentication
+      '/api/login/auth': {
+        target: 'http://45.91.133.108:3000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/login\/auth/, '/auth'),
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes, req) => {
+            proxyRes.headers['access-control-allow-origin'] = req.headers.origin || '*';
+            proxyRes.headers['access-control-allow-credentials'] = 'true';
+          });
+        },
+      },
+      // 3. Facebook
+      '/api/facebook': {
+        target: 'http://45.91.133.108:3000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/facebook/, '/facebook'),
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes, req) => {
+            proxyRes.headers['access-control-allow-origin'] = req.headers.origin || '*';
+            proxyRes.headers['access-control-allow-credentials'] = 'true';
+          });
+        },
+      },
+      // 4. Settings
+      '/api/settings': {
+        target: 'http://45.91.133.108:3000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/settings/, '/settings'),
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes, req) => {
+            proxyRes.headers['access-control-allow-origin'] = req.headers.origin || '*';
+            proxyRes.headers['access-control-allow-credentials'] = 'true';
+          });
+        },
       },
 
-      // Proxy Facebook helper routes (apifb) -> local demo backend
-      '/apifb': {
-        target: 'https://integer-maps-extract-towards.trycloudflare.com',
+      // 5. AI Gemini
+      '/ai-gemini': {
+        target: 'http://45.91.133.108:3000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/apifb/, ''),
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes, req) => {
+            proxyRes.headers['access-control-allow-origin'] = req.headers.origin || '*';
+            proxyRes.headers['access-control-allow-credentials'] = 'true';
+          });
+        },
       },
 
-      // General /api -> backend (images, other api calls)
+      // General /api fallback (if needed)
       '/api': {
-        target: 'https://integer-maps-extract-towards.trycloudflare.com',
+        target: 'http://45.91.133.108:3000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
-      }
-      ,
-      // Proxy n8n webhook paths to local n8n (avoid CORS during dev)
-      '/workflow': {
-        target: 'https://integer-maps-extract-towards.trycloudflare.com',
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes, req) => {
+            proxyRes.headers['access-control-allow-origin'] = req.headers.origin || '*';
+            proxyRes.headers['access-control-allow-credentials'] = 'true';
+          });
+        },
+      },
+
+      // n8n webhooks
+      '/webhook': {
+        target: 'http://localhost:5678',
         changeOrigin: true,
-        rewrite: (path) => path, // keep path as-is; frontend will usually be normalized to /webhook
+      },
+      '/workflow': {
+        target: 'http://localhost:5678',
+        changeOrigin: true,
       }
     }
   }
